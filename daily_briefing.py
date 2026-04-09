@@ -40,16 +40,16 @@ HOUR      = NOW.hour
 SLOTS = {
     8 : {"label": "장 시작 전 브리핑",      "icon": "🌅",
          "focus": "전날 미국 마감 · 오늘 개장 전 점검",
-         "news_q": "한국 미국 경제 증시 금융 오늘"},
+         "news_q": "Korea stock market economy finance"},
     13: {"label": "오전장 중간 점검",        "icon": "☀️",
          "focus": "오전 거래량 · 업종별 흐름 확인",
-         "news_q": "한국 KOSPI 코스피 오전장 경제"},
+         "news_q": "KOSPI Asia stock market economy"},
     16: {"label": "장 마감 결산",            "icon": "🏁",
          "focus": "국내 최종 종가 · 외국인/기관 동향",
-         "news_q": "한국 증시 마감 종가 오후 경제"},
+         "news_q": "Korea stock market close economy"},
     21: {"label": "미국 장 시작 모니터링",   "icon": "🌙",
          "focus": "미국 개장 · 선물 지수 · 야간 이슈",
-         "news_q": "미국 증시 나스닥 월스트리트 경제"},
+         "news_q": "Wall Street NYSE NASDAQ stock market"},
 }
 
 def get_slot():
@@ -132,15 +132,20 @@ def fetch_economic_indicators():
 # ══════════════════════════════════════════════════════════════
 # 3. 뉴스 (NewsAPI) — 원문 링크 포함
 # ══════════════════════════════════════════════════════════════
+# NewsAPI 무료 플랜은 한국어(ko) 소스가 거의 없으므로 영어 쿼리 사용.
+# 슬롯별 영어 쿼리는 SLOTS 딕셔너리의 news_q 항목에서 정의.
 def fetch_news(query, count=5):
-    def _call(lang):
-        return requests.get("https://newsapi.org/v2/everything",
-            params={"q": query, "language": lang, "sortBy": "publishedAt",
+    # 1차: everything 엔드포인트 (영어, 최신순)
+    r = requests.get("https://newsapi.org/v2/everything",
+        params={"q": query, "language": "en", "sortBy": "publishedAt",
+                "pageSize": count * 2, "apiKey": NEWS_API_KEY}, timeout=10)
+
+    # 2차: top-headlines 폴백 (business 카테고리)
+    if r.status_code != 200 or not r.json().get("articles"):
+        r = requests.get("https://newsapi.org/v2/top-headlines",
+            params={"category": "business", "language": "en",
                     "pageSize": count * 2, "apiKey": NEWS_API_KEY}, timeout=10)
 
-    r = _call("ko")
-    if r.status_code != 200 or not r.json().get("articles"):
-        r = _call("en")
     r.raise_for_status()
 
     result = []
