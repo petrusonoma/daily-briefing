@@ -1,1 +1,43 @@
 
+name: 📊 Daily Economic Briefing (4x/day)
+
+on:
+  schedule:
+    # KST 08:00 = UTC 23:00 (전날)
+    - cron: "0 23 * * *"
+    # KST 13:00 = UTC 04:00
+    - cron: "0 4 * * *"
+    # KST 16:00 = UTC 07:00
+    - cron: "0 7 * * *"
+    # KST 21:00 = UTC 12:00
+    - cron: "0 12 * * *"
+
+  # 수동 실행 (Actions 탭 → Run workflow)
+  workflow_dispatch:
+
+jobs:
+  briefing:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 코드 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 🐍 Python 설정
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 📦 의존성 설치
+        run: |
+          pip install --upgrade pip
+          pip install yfinance requests
+
+      - name: 🚀 경제 브리핑 실행
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          FRED_API_KEY:       ${{ secrets.FRED_API_KEY }}
+          NEWS_API_KEY:       ${{ secrets.NEWS_API_KEY }}
+          NOTION_TOKEN:       ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: python daily_briefing.py
