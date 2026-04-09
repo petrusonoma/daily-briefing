@@ -203,7 +203,7 @@ def _claude_select(candidates, count=8):
     2. 매크로 경제 지표 (CPI/고용/GDP 발표)
     3. 주요 기업/산업 이슈 (시총 상위 종목, 주도 섹터)
     4. 지정학/정책 리스크 (무역/관세/규제)
-    제외: 단순 시황 요약, 연예/스포츠, 광고성 보도자료
+    제외: 단순 시황 요약, 연예/스포츠, 광고성 보도자료, 특정 종목 급등/급락 단순 보도("OO주 XX% 급등" 등)
     """
     candidate_list = "\n".join(
         f"{i+1}. {n['title']}" for i, n in enumerate(candidates)
@@ -309,6 +309,7 @@ def fetch_mk_top10():
                     href = "https://www.mk.co.kr" + href
                 title = a.get_text(strip=True)
                 if (len(title) > 10 and "/news/" in href
+                    and not any(ex in title for ex in EXCLUDE_MK)
                         and href not in seen and "ranking" not in href):
                     seen.add(href)
                     result.append({
@@ -336,7 +337,8 @@ def fetch_mk_top10():
                 continue
             if not href.startswith("http"):
                 href = "https://www.mk.co.kr" + href
-            if title and len(title) > 5:
+            EXCLUDE_MK = ["기사 속 종목이야기", "종목이야기", "주간 핫클릭"]
+            if title and len(title) > 5 and not any(ex in title for ex in EXCLUDE_MK):
                 result.append({
                     "rank"  : i + 1,
                     "title" : title,
